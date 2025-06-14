@@ -1,0 +1,20 @@
+# 心跳频率, 单位秒
+# 0 为关闭心跳
+heartbeatInterval: 5
+
+# 上报数据类型
+# 可选: 1:string, 2:array
+messagePostFormat: 1
+
+# 连接服务列表
+servers:
+  - name: ws_name
+    address: ws_address
+    type: 1
+    reconnectInterval: 5
+    maxReconnectAttempts: 0
+  - name: koinori
+    address: ws://124.222.49.33:5021/ws/
+    type: "1"
+    reconnectInterval: "5"
+    maxReconnectAttempts: "0"
