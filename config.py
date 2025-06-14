@@ -14,15 +14,15 @@ PUBLIC_BOT = True  # 是否启用云bot模式（一般可忽略）
 
 # 腾讯api
 # 密钥可前往 https://console.cloud.tencent.com/cam/capi 网站进行获取
-TXSecretId = 'AKIDCF1VhcHfneFYaLp1waw2qNddLnysVrvi'
-TXSecretKey = 'Yqrb4GBoAG5dvylHWUBbjaBVYJo21kDO'
+TXSecretId = ''
+TXSecretKey = ''
 
 # 天行api，使用范围：土味情话，彩虹屁，可前往 https://www.tianapi.com/ 获取
-tianxing_apikey = '2ca79a2d302de4cabe3d40abe1d9b6cd'
+tianxing_apikey = ''
 
 # 有道翻译api
-youdao_appkey = '68bc2ee7f0c81f01'
-youdao_secret = 'DAR6n72KwlVOHzAkBA5g3tKJggiiaaIX'
+youdao_appkey = ''
+youdao_secret = ''
 
 # 随机美图
 AUTO_SAVE = True  # 是否保存到本地
@@ -31,7 +31,7 @@ DELETE_TIME = 30  # 撤回的等待时间
 
 # arcaeaAPI
 api_url = 'https://server.awbugl.top/arcapi/'
-token = '006b00a877b40048daed6bec9db26e463d8ad745'
+token = ''
 
 # danbooru
 SAVE_MODE = False  # 是否保存到本地
@@ -44,17 +44,17 @@ foods_whitelist = [837052156, 974114299, 807505574]  # 可以添加菜谱的群�
 proxies = {}
 
 # openai api (已失效过期)
-OPEN_API = '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'
-OPEN_ORG = 'org-H6PtRi8SHCJWjQBfygqMsW0e'
+OPEN_API = ''
+OPEN_ORG = ''
 
 #chatplus 令牌
 chat_whitelist = False  # 是否启动白名单模式
-PLUS_TOKEN = 'c8d05718b10f35fe8abd35137fea517c7e17b32587a24fc0bfeddea658315928'
+PLUS_TOKEN = ''
 
 
 # jhapi api
 # ??? 用法不明
-JHAPI_API = 'usCl6x6rsVLqftCJmdQImHLMhR'
+JHAPI_API = ''
 
 #新增功能
 maxhp = 100000                   #萝莉初始血量
