@@ -389,20 +389,18 @@ async def give_energy_drink(bot, ev):
 @sv.on_fullmatch(('寻回宠物', '找回宠物'))
 async def retrieve_pet(bot, ev):
     user_id = ev.user_id
-    
     # 检查是否拥有最初的契约
     if not await use_user_item(user_id, "最初的契约"):
         await bot.send(ev, "你没有最初的契约！", at_sender=True)
         return
     
     # 检查是否有宠物
-    await update_user_pet(user_id, pet)
     pet = await get_user_pet(user_id)
     if not pet:
         await bot.send(ev, "你还没有宠物！", at_sender=True)
         await add_user_item(user_id, "最初的契约")
         return
-    
+    pet = await update_pet_status(pet)
     if not pet["runaway"]:
         await bot.send(ev, "你的宠物没有离家出走！", at_sender=True)
         await add_user_item(user_id, "最初的契约")
@@ -847,6 +845,8 @@ async def show_pet(bot, ev):
 async def release_pet(bot, ev):
     user_id = ev.user_id
     pet = await get_user_pet(user_id)
+    pet = await update_pet_status(pet)
+    await update_user_pet(user_id, pet)
     if pet["runaway"]:
         await bot.send(ev, f"{pet['name']}已经离家出走了！使用'最初的契约'可以寻回它。", at_sender=True)
         return
