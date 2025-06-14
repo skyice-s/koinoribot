@@ -1065,8 +1065,6 @@ async def record_gamble_today(user_id):
 
 def get_gamble_win_probability(gold, uid):
     """根据金币数量计算获胜概率 (返回 0 到 1 之间的值)"""
-    if uid in SUPERUSERS:
-        return 0.99
     if gold < 10000:
         return 0.90
     elif gold < 50000:
