@@ -868,29 +868,34 @@ async def pet_ranking(bot, ev):
     """显示成长值最高的前10只成年体宠物"""
     user_pets = await get_user_pets()
     
-    # 筛选成年体宠物并按成长值排序
     adult_pets = []
     for user_id, pet in user_pets.items():
-        if pet.get("stage") == 2:  # 仅成年体
-            pet = await update_pet_status(pet)
-            adult_pets.append((pet["growth"], pet["name"], pet["type"], user_id))
+        # 先检查是否为成年体
+        if pet.get("stage") != 2:
+            continue
+            
+        # 创建临时副本并更新状态
+        temp_pet = dict(pet)
+        temp_pet = await update_pet_status(temp_pet)
+        
+        # 再检查离家出走状态（使用get避免KeyError）
+        if not temp_pet.get("runaway", False):
+            adult_pets.append((
+                temp_pet["growth"], 
+                temp_pet["name"], 
+                temp_pet["type"], 
+                user_id
+            ))
     
     if not adult_pets:
         await bot.send(ev, "目前还没有成年体宠物上榜哦！", at_sender=True)
         return
     
-    # 按成长值降序排序
     adult_pets.sort(reverse=True)
     
-    # 构建排行榜消息
     msg = ["\n🏆 宠物排行榜-TOP10 🏆"]
     for rank, (growth, name, pet_type, user_id) in enumerate(adult_pets[:10], 1):
-        try:
-            user_info = await bot.get_group_member_info(group_id=ev.group_id, user_id=int(user_id))
-            nickname = user_info.get("nickname", user_id)
-        except:
-            nickname = user_id
-        msg.append(f"第{rank}名: {name}({pet_type}) \n 成长值:{growth:.1f} ")
+        msg.append(f"第{rank}名: {name}({pet_type}) \n成长值: {growth:.1f}")
     
     await bot.send(ev, "\n".join(msg), at_sender=True)
 
@@ -899,50 +904,77 @@ async def my_pet_ranking(bot, ev):
     """查看自己宠物的排名"""
     user_id = ev.user_id
     pet = await get_user_pet(user_id)
+    
+    # 检查自己宠物状态
     if not pet:
         await bot.send(ev, "你还没有宠物！", at_sender=True)
         return
     
+    # 更新自己宠物状态并保存
     pet = await update_pet_status(pet)
+    await update_user_pet(user_id, pet)
     
-    if pet["stage"] != 2:  # 仅成年体可查看排名
+    if pet.get("runaway", False):
+        await bot.send(ev, f"你的宠物【{pet['name']}】离家出走了，无法参与排行", at_sender=True)
+        return
+        
+    if pet.get("stage") != 2:
         await bot.send(ev, "只有成年体宠物可以查看排名哦！", at_sender=True)
         return
     
+    # 获取并临时更新所有宠物状态
     user_pets = await get_user_pets()
+    valid_pets = []
     
-    # 筛选所有成年体宠物
-    adult_pets = []
     for uid, p in user_pets.items():
-        if p.get("stage") == 2:
-            p = await update_pet_status(p)
-            adult_pets.append((p["growth"], uid))
+        # 只处理成年体宠物
+        if p.get("stage") != 2:
+            continue
+            
+        # 创建临时副本并更新状态
+        temp_pet = dict(p)
+        temp_pet = await update_pet_status(temp_pet)
+        
+        # 筛选有效宠物
+        if not temp_pet.get("runaway", False):
+            valid_pets.append((
+                temp_pet["growth"], 
+                uid,
+                temp_pet.get("name", "未知宠物")
+            ))
     
-    if not adult_pets:
-        await bot.send(ev, "目前还没有成年体宠物上榜哦！", at_sender=True)
+    if not valid_pets:
+        await bot.send(ev, "目前还没有有效的成年体宠物上榜哦！", at_sender=True)
         return
     
     # 按成长值排序
-    adult_pets.sort(reverse=True)
+    valid_pets.sort(reverse=True, key=lambda x: x[0])
     
-    # 查找自己的排名
-    my_growth = pet["growth"]
-    rank = None
-    same_growth_count = 0
+    # 计算排名（处理并列情况）
+    rankings = {}
+    current_rank = 1
+    prev_growth = None
     
-    for i, (growth, uid) in enumerate(adult_pets):
-        if uid == str(user_id):
-            rank = i + 1
-            break
-        if growth == my_growth:
-            same_growth_count += 1
+    for idx, (growth, uid, name) in enumerate(valid_pets):
+        if growth != prev_growth:
+            current_rank = idx + 1
+        rankings[uid] = (current_rank, growth)
+        prev_growth = growth
     
-    if rank is None:
+    # 获取自己的排名
+    my_rank, my_growth = rankings.get(str(user_id), (None, None))
+    
+    if my_rank is None:
         await bot.send(ev, "你的宠物未上榜！", at_sender=True)
     else:
-        total_pets = len(adult_pets)
-        await bot.send(ev, f"你的宠物【{pet['name']}】当前排名: 第{rank}名 \n成长值: {my_growth:.1f}", at_sender=True)
-
+        total_pets = len(valid_pets)
+        await bot.send(
+            ev,
+            f"\n你的宠物【{pet['name']}】"
+            f"\n当前排名: 第{my_rank}名（共{total_pets}只成年宠物）"
+            f"\n成长值: {my_growth:.1f}",
+            at_sender=True
+        )
 
 
 
