@@ -396,6 +396,7 @@ async def retrieve_pet(bot, ev):
         return
     
     # 检查是否有宠物
+    await update_user_pet(user_id, pet)
     pet = await get_user_pet(user_id)
     if not pet:
         await bot.send(ev, "你还没有宠物！", at_sender=True)
