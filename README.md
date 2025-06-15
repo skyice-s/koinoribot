@@ -10,6 +10,7 @@
 > - 下载本仓库，将koinoribot文件夹解压至 `hoshino/modules` 里。
 > - 安装python3.8.0
 > - pip安装 `requirements.txt` 内的所有依赖（直接装koinoribot里的就行，已涵盖HoshinoBot/requirements.txt中的所有依赖）。
+> - 将`hoshinobot/hoshino/config_example`文件夹更名为`hoshinobot/hoshino/config`
 > - 在 `hoshino/config/__bot__.py` 中的 `MODULES_ON` 里新增一行 `"koinoribot",`。
 
 <details>
