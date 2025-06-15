@@ -7,38 +7,38 @@ from ..money import get_user_money, reduce_user_money, increase_user_money
 from ..config import BLACKUSERS
 
 
-sv = Service('ÇÀºì°ü-±ùÆí')
+sv = Service('æŠ¢çº¢åŒ…-å†°ç¥ˆ')
 
 no = get('emotion/no.png').cqcode
 
 freq = FreqLimiter(10)
 
-debug_mode = False  # ²âÊÔÄ£Ê½£¬²»ÏûºÄ½ğ±Ò
+debug_mode = False  # æµ‹è¯•æ¨¡å¼ï¼Œä¸æ¶ˆè€—é‡‘å¸
 
-@sv.on_prefix('·¢ºì°ü')
+@sv.on_prefix('å‘çº¢åŒ…')
 async def fa_hongbao(bot, ev):
     message = ev.message.extract_plain_text().strip()
     if not message:
         return
-    if interact.find_session(ev, name='½ğ±Òºì°ü'):
-        session = interact.find_session(ev, name='½ğ±Òºì°ü')
+    if interact.find_session(ev, name='é‡‘å¸çº¢åŒ…'):
+        session = interact.find_session(ev, name='é‡‘å¸çº¢åŒ…')
         if session.is_expire():
 
-            # Ê£ÓàµÄÇ®·µ»¹¸ø·¢ÆğÈË
+            # å‰©ä½™çš„é’±è¿”è¿˜ç»™å‘èµ·äºº
             remain_money = sum(session.state['hb_list'])
             if not debug_mode:
                 increase_user_money(session.state['owner'], 'gold', remain_money)
             session.close()
         else:
-            await bot.send(ev, f'µ±Ç°»¹ÓĞÃ»ÁìÍêµÄ½ğ±Òºì°ü~')
+            await bot.send(ev, f'å½“å‰è¿˜æœ‰æ²¡é¢†å®Œçš„é‡‘å¸çº¢åŒ…~')
             return
 
     if ev.user_id in BLACKUSERS:
-        await bot.send(ev, '\n²Ù×÷Ê§°Ü£¬ÕË»§±»¶³½á£¬ÇëÁªÏµ¹ÜÀíÔ±Ñ°Çó°ïÖú¡£' +no, at_sender=True)
+        await bot.send(ev, '\næ“ä½œå¤±è´¥ï¼Œè´¦æˆ·è¢«å†»ç»“ï¼Œè¯·è”ç³»ç®¡ç†å‘˜å¯»æ±‚å¸®åŠ©ã€‚' +no, at_sender=True)
         return
-    # ´Ë´¦ÎªÀäÈ´Ê±¼äÅĞ¶¨
+    # æ­¤å¤„ä¸ºå†·å´æ—¶é—´åˆ¤å®š
     if not freq.check(ev.user_id):
-        await bot.send(ev, 'Ê®ÃëÖÓÖ®ÄÚÖ»ÄÜ·¢Ò»¸öºì°ü' + no)
+        await bot.send(ev, 'åç§’é’Ÿä¹‹å†…åªèƒ½å‘ä¸€ä¸ªçº¢åŒ…' + no)
         return
 
     money_and_mxuser = message.split()
@@ -51,7 +51,7 @@ async def fa_hongbao(bot, ev):
     print(currency, max_user)
 
     if not str.isdigit(currency) or not str.isdigit(max_user):
-        await bot.send(ev, 'Òª°¢À­²®Êı×Ö' + no)
+        await bot.send(ev, 'è¦é˜¿æ‹‰ä¼¯æ•°å­—' + no)
         return
 
     currency = int(currency)
@@ -60,13 +60,13 @@ async def fa_hongbao(bot, ev):
     group_info = await bot.get_group_info(group_id=ev.group_id, no_cache=True)
 
     if max_user <= 2 or max_user > group_info['member_count']:
-        await bot.send(ev, 'ºì°ü¸öÊı²»¶Ô' + no)
+        await bot.send(ev, 'çº¢åŒ…ä¸ªæ•°ä¸å¯¹' + no)
         return
 
     user_money = get_user_money(ev.user_id, 'gold')
 
     if currency <= max_user or currency > int(user_money):
-        await bot.send(ev, '½ğ±ÒÊıÁ¿²»¶Ô' + no)
+        await bot.send(ev, 'é‡‘å¸æ•°é‡ä¸å¯¹' + no)
         return
 
     freq.start_cd(ev.user_id)
@@ -75,7 +75,7 @@ async def fa_hongbao(bot, ev):
         reduce_user_money(ev.user_id, 'gold', currency)
 
     hongbao_list = get_double_mean_money(currency, max_user)
-    session = ActSession.from_event('½ğ±Òºì°ü', ev, usernum_limit = True, max_user = max_user, expire_time=600)
+    session = ActSession.from_event('é‡‘å¸çº¢åŒ…', ev, usernum_limit = True, max_user = max_user, expire_time=600)
     interact.add_session(session)
     session.state['hb_list'] = hongbao_list
     session.state['owner'] = ev.user_id
@@ -84,38 +84,34 @@ async def fa_hongbao(bot, ev):
     user_info = await bot.get_group_member_info(group_id=ev.group_id, user_id=ev.user_id)
     nickname = user_info['nickname']
 
-    await bot.send(ev, f'{nickname}·¢ÁËÒ»¸ö{currency}Ã¶½ğ±ÒµÄºì°ü£¬Ò»¹²ÓĞ{max_user}·İ~\nÊ¹ÓÃ"ÇÀºì°ü"À´ÁìÈ¡ºì°ü')
+    await bot.send(ev, f'{nickname}å‘äº†ä¸€ä¸ª{currency}æšé‡‘å¸çš„çº¢åŒ…ï¼Œä¸€å…±æœ‰{max_user}ä»½~\nä½¿ç”¨"æŠ¢çº¢åŒ…"æ¥é¢†å–çº¢åŒ…')
 
 
-@sv.on_prefix('ÇÀºì°ü')
+@sv.on_prefix('æŠ¢çº¢åŒ…')
 async def qiang_hongbao(bot, ev):
-    if not interact.find_session(ev, name='½ğ±Òºì°ü'):
+    if not interact.find_session(ev, name='é‡‘å¸çº¢åŒ…'):
         return
-    session = interact.find_session(ev, name='½ğ±Òºì°ü')
+    session = interact.find_session(ev, name='é‡‘å¸çº¢åŒ…')
     if session.is_expire():
         remain_money = sum(session.state['hb_list'])
         if not debug_mode:
             increase_user_money(session.state['owner'], 'gold', remain_money)
-        await session.send(ev, f'ºì°ü¹ıÆÚ£¬ÒÑ·µ»¹Ê£ÓàµÄ{remain_money}Ã¶½ğ±Ò')
+        await session.send(ev, f'çº¢åŒ…è¿‡æœŸï¼Œå·²è¿”è¿˜å‰©ä½™çš„{remain_money}æšé‡‘å¸')
         session.close()
         return
     if ev.user_id in session.state['users']:
-        await bot.send(ev, 'ÄãÒÑ¾­ÇÀ¹ıºì°üÁË£¡')
+        await bot.send(ev, 'ä½ å·²ç»æŠ¢è¿‡çº¢åŒ…äº†ï¼')
         return
     if session.state['hb_list']:
         user_gain = session.state['hb_list'].pop()
         session.state['users'].append(ev.user_id)
         if not debug_mode:
             increase_user_money(ev.user_id, 'gold', user_gain)
-            await bot.send(ev, f'ÄãÇÀµ½ÁË{user_gain}Ã¶½ğ±Ò~', at_sender=True)
+            await bot.send(ev, f'ä½ æŠ¢åˆ°äº†{user_gain}æšé‡‘å¸~', at_sender=True)
     if not session.state['hb_list']:
         session.close()
-        await bot.send(ev, 'ºì°üÁìÍêÁË~')
+        await bot.send(ev, 'çº¢åŒ…é¢†å®Œäº†~')
         return
-
-
-
-
 
 
 

@@ -37,3 +37,4 @@ plotly==6.0.1
 filetype==1.2.0
 python-Levenshtein==0.25.1
 nonebot[scheduler]==1.8.0
+openai~=1.86.0

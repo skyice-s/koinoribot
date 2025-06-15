@@ -15,66 +15,66 @@ from .. import money, config
 from hoshino.config import SUPERUSERS
 import time
 
-sv = Service('½ğ±ÒÕ¨µ¯', visible=True, enable_on_default=True)
+sv = Service('é‡‘å¸ç‚¸å¼¹', visible=True, enable_on_default=True)
 no = get('emotion/no.png').cqcode
 ok = get('emotion/ok.png').cqcode
-# ÓÎÏ·»á»°¹ÜÀí
-game_sessions = {}  # {group_id: {session_id: ½ğ±ÒÕ¨µ¯session}}
-session_id_counter = 0 # ÓÃÓÚÉú³ÉÎ¨Ò»µÄ»á»°ID
-MAX_POT_LIMIT = 1000 #×î´ó½±³Ø
-PENALTY = 1000 #Ê§°Ü³Í·£
-TIMEOUT = 300 # ³¬Ê±Ê±¼ä
+# æ¸¸æˆä¼šè¯ç®¡ç†
+game_sessions = {}  # {group_id: {session_id: é‡‘å¸ç‚¸å¼¹session}}
+session_id_counter = 0 # ç”¨äºç”Ÿæˆå”¯ä¸€çš„ä¼šè¯ID
+MAX_POT_LIMIT = 1000 #æœ€å¤§å¥–æ± 
+PENALTY = 1000 #å¤±è´¥æƒ©ç½š
+TIMEOUT = 300 # è¶…æ—¶æ—¶é—´
 
-# ½ğ±ÒÕ¨µ¯»á»°Àà
+# é‡‘å¸ç‚¸å¼¹ä¼šè¯ç±»
 class GoldBombSession:
     def __init__(self, group_id, starter_id, bot):
         global session_id_counter
         session_id_counter += 1
-        self.session_id = session_id_counter #Éú³ÉÎ¨Ò»µÄ»á»°ID
+        self.session_id = session_id_counter #ç”Ÿæˆå”¯ä¸€çš„ä¼šè¯ID
         self.group_id = group_id
         self.starter_id = starter_id
-        self.bot = bot  # HoshinoBot ÊµÀı
-        self.players = {}  # {user_id: pot_amount}  Ã¿¸öÍæ¼ÒµÄ½ğ±Ò½±³Ø
-        self.player_order = [] # Íæ¼ÒË³ĞòÁĞ±í
-        self.is_running = False # ÓÎÏ·ÊÇ·ñÕıÔÚÔËĞĞ
-        self.prepared = {}  # {user_id: True/False}  Íæ¼ÒÊÇ·ñ×¼±¸
-        self.failed = {} # {user_id: True/False} Íæ¼ÒÊÇ·ñÊ§°Ü
-        self.all_stopped = False # Íæ¼ÒÊÇ·ñ¶¼Í£Ö¹ÏÂ×¢
-        self.turn = None  # µ±Ç°»ØºÏÍæ¼Ò
-        self.task = None  # ¶¨Ê±ÈÎÎñ
-        self.start_time = None # ¼ÇÂ¼ÓÎÏ·¿ªÊ¼µÄÊ±¼ä
+        self.bot = bot  # HoshinoBot å®ä¾‹
+        self.players = {}  # {user_id: pot_amount}  æ¯ä¸ªç©å®¶çš„é‡‘å¸å¥–æ± 
+        self.player_order = [] # ç©å®¶é¡ºåºåˆ—è¡¨
+        self.is_running = False # æ¸¸æˆæ˜¯å¦æ­£åœ¨è¿è¡Œ
+        self.prepared = {}  # {user_id: True/False}  ç©å®¶æ˜¯å¦å‡†å¤‡
+        self.failed = {} # {user_id: True/False} ç©å®¶æ˜¯å¦å¤±è´¥
+        self.all_stopped = False # ç©å®¶æ˜¯å¦éƒ½åœæ­¢ä¸‹æ³¨
+        self.turn = None  # å½“å‰å›åˆç©å®¶
+        self.task = None  # å®šæ—¶ä»»åŠ¡
+        self.start_time = None # è®°å½•æ¸¸æˆå¼€å§‹çš„æ—¶é—´
 
     async def start(self):
-        self.is_running = True # ±ê¼ÇÓÎÏ·¿ªÊ¼
-        self.start_time = time.time()  # ¼ÇÂ¼ÓÎÏ·¿ªÊ¼µÄÊ±¼ä
+        self.is_running = True # æ ‡è®°æ¸¸æˆå¼€å§‹
+        self.start_time = time.time()  # è®°å½•æ¸¸æˆå¼€å§‹çš„æ—¶é—´
         self.player_order = list(self.players.keys())
-        shuffle(self.player_order)  # ´òÂÒÍæ¼ÒË³Ğò
-        self.turn = cycle(self.player_order) # ÂÖÁ÷ÏÂ×¢µÄÍæ¼Ò
-        await self.next_turn()  # ¿ªÊ¼µÚÒ»»ØºÏ
-        self.set_timer() # Æô¶¯¶¨Ê±ÈÎÎñ
+        shuffle(self.player_order)  # æ‰“ä¹±ç©å®¶é¡ºåº
+        self.turn = cycle(self.player_order) # è½®æµä¸‹æ³¨çš„ç©å®¶
+        await self.next_turn()  # å¼€å§‹ç¬¬ä¸€å›åˆ
+        self.set_timer() # å¯åŠ¨å®šæ—¶ä»»åŠ¡
 
     async def next_turn(self):
-        # ÕÒµ½ÏÂÒ»¸öÃ»ÓĞÊ§°ÜµÄÍæ¼Ò
+        # æ‰¾åˆ°ä¸‹ä¸€ä¸ªæ²¡æœ‰å¤±è´¥çš„ç©å®¶
         while True:
-            # ¼ì²éÊÇ·ñËùÓĞÍæ¼Ò¶¼Ê§°Ü
+            # æ£€æŸ¥æ˜¯å¦æ‰€æœ‰ç©å®¶éƒ½å¤±è´¥
             if all(self.failed.get(user_id, False) for user_id in self.players):
                 await self.end_game()
                 break
 
-            # Ôö¼ÓÅĞ¶Ï£ºÈç¹ûÖ»Ê£Ò»¸öÍæ¼ÒÇÒ¸ÃÍæ¼ÒÒÑÊ§°Ü£¬Ôò½áÊøÓÎÏ·
+            # å¢åŠ åˆ¤æ–­ï¼šå¦‚æœåªå‰©ä¸€ä¸ªç©å®¶ä¸”è¯¥ç©å®¶å·²å¤±è´¥ï¼Œåˆ™ç»“æŸæ¸¸æˆ
             if len(self.player_order) == 0:
                  await self.end_game()
                  break
             try:
 
                 next_player = next(self.turn)
-                if not self.failed.get(next_player, False): # È·±£Íæ¼ÒÃ»ÓĞÊ§°Ü
+                if not self.failed.get(next_player, False): # ç¡®ä¿ç©å®¶æ²¡æœ‰å¤±è´¥
                     self.current_player = next_player
-                    await self.bot.send_group_msg(group_id=self.group_id, message=f'ÂÖµ½ {MessageSegment.at(self.current_player)} ÏÂ×¢ (ÏÂ×¢/Í£Ö¹ÏÂ×¢)¡£')
-                    break # ÕÒµ½ÏÂÒ»¸öÍæ¼Ò£¬Ìø³öÑ­»·
-            except StopIteration:  # ËùÓĞÍæ¼Ò¶¼Í£Ö¹ÏÂ×¢»òÊ§°Ü
+                    await self.bot.send_group_msg(group_id=self.group_id, message=f'è½®åˆ° {MessageSegment.at(self.current_player)} ä¸‹æ³¨ (ä¸‹æ³¨/åœæ­¢ä¸‹æ³¨)ã€‚')
+                    break # æ‰¾åˆ°ä¸‹ä¸€ä¸ªç©å®¶ï¼Œè·³å‡ºå¾ªç¯
+            except StopIteration:  # æ‰€æœ‰ç©å®¶éƒ½åœæ­¢ä¸‹æ³¨æˆ–å¤±è´¥
                 await self.end_game()
-                break # Ìø³öÑ­»·
+                break # è·³å‡ºå¾ªç¯
             except Exception as e:
                 print(f"next_turn error: {e}")
                 await self.end_game()
@@ -82,7 +82,7 @@ class GoldBombSession:
 
     async def bet(self, user_id):
         if user_id != self.current_player:
-            await self.bot.send_group_msg(group_id=self.group_id, message=f'»¹Ã»ÂÖµ½ÄãÏÂ×¢¡£');
+            await self.bot.send_group_msg(group_id=self.group_id, message=f'è¿˜æ²¡è½®åˆ°ä½ ä¸‹æ³¨ã€‚');
             return
 
         amount = randint(100, 500)
@@ -90,31 +90,31 @@ class GoldBombSession:
         new_pot = current_pot + amount
 
         if new_pot > MAX_POT_LIMIT:
-            self.failed[user_id] = True # ±ê¼ÇÍæ¼ÒÊ§°Ü
-            self.players[user_id] = MAX_POT_LIMIT # ½±³Ø¹Ì¶¨ÎªÉÏÏŞ
-            await self.bot.send_group_msg(group_id=self.group_id, message=f'{MessageSegment.at(user_id)} ÏÂ×¢ {amount} ½ğ±Ò£¬³¬³öÉÏÏŞ£¡ÅĞ¶¨Ê§°Ü£¬ÒÑ´ïµ½{MAX_POT_LIMIT}½ğ±Ò£¬½ûÖ¹¼ÌĞøÏÂ×¢¡£')
+            self.failed[user_id] = True # æ ‡è®°ç©å®¶å¤±è´¥
+            self.players[user_id] = MAX_POT_LIMIT # å¥–æ± å›ºå®šä¸ºä¸Šé™
+            await self.bot.send_group_msg(group_id=self.group_id, message=f'{MessageSegment.at(user_id)} ä¸‹æ³¨ {amount} é‡‘å¸ï¼Œè¶…å‡ºä¸Šé™ï¼åˆ¤å®šå¤±è´¥ï¼Œå·²è¾¾åˆ°{MAX_POT_LIMIT}é‡‘å¸ï¼Œç¦æ­¢ç»§ç»­ä¸‹æ³¨ã€‚')
 
-            #´ÓÍæ¼ÒË³ĞòÖĞÒÆ³ı£¬·ÀÖ¹ÎŞÏŞÑ­»·
+            #ä»ç©å®¶é¡ºåºä¸­ç§»é™¤ï¼Œé˜²æ­¢æ— é™å¾ªç¯
             if user_id in self.player_order:
                 self.player_order.remove(user_id)
 
-            await self.next_turn() # ÂÖµ½ÏÂÒ»Î»Íæ¼Ò
+            await self.next_turn() # è½®åˆ°ä¸‹ä¸€ä½ç©å®¶
 
         else:
             self.players[user_id] = new_pot
-            await self.bot.send_group_msg(group_id=self.group_id, message=f'{MessageSegment.at(user_id)} ÏÂ×¢ {amount} ½ğ±Ò£¬Ä¿Ç°½±³Ø {new_pot}¡£')
+            await self.bot.send_group_msg(group_id=self.group_id, message=f'{MessageSegment.at(user_id)} ä¸‹æ³¨ {amount} é‡‘å¸ï¼Œç›®å‰å¥–æ±  {new_pot}ã€‚')
             await self.next_turn()
 
     async def stop_bet(self, user_id):
         if user_id not in self.players:
             return
 
-        self.player_order.remove(user_id) # ´ÓÍæ¼ÒË³ĞòÖĞÒÆ³ı
-        if not self.player_order: # Èç¹ûËùÓĞÍæ¼Ò¶¼Í£Ö¹ÏÂ×¢
+        self.player_order.remove(user_id) # ä»ç©å®¶é¡ºåºä¸­ç§»é™¤
+        if not self.player_order: # å¦‚æœæ‰€æœ‰ç©å®¶éƒ½åœæ­¢ä¸‹æ³¨
             await self.end_game()
             return
 
-        # ÖØÖÃÂÖ»»Æ÷
+        # é‡ç½®è½®æ¢å™¨
         self.turn = cycle(self.player_order)
         await self.next_turn()
 
@@ -123,41 +123,41 @@ class GoldBombSession:
             return
 
         self.is_running = False
-        await self.bot.send_group_msg(group_id=self.group_id, message='ËùÓĞÍæ¼ÒÒÑÍ£Ö¹ÏÂ×¢»òÊ§°Ü£¬ÕıÔÚ½áËã...')
+        await self.bot.send_group_msg(group_id=self.group_id, message='æ‰€æœ‰ç©å®¶å·²åœæ­¢ä¸‹æ³¨æˆ–å¤±è´¥ï¼Œæ­£åœ¨ç»“ç®—...')
 
         winner = None
         min_diff = float('inf')
-        all_failed = True  # Ä¬ÈÏËùÓĞÈË¶¼Ê§°Ü
+        all_failed = True  # é»˜è®¤æ‰€æœ‰äººéƒ½å¤±è´¥
 
-        # Ñ°ÕÒÀëÉÏÏŞ×î½üµÄÍæ¼Ò
+        # å¯»æ‰¾ç¦»ä¸Šé™æœ€è¿‘çš„ç©å®¶
         for user_id, pot in self.players.items():
-            if not self.failed.get(user_id, False):  # ÅÅ³ıÊ§°ÜµÄÍæ¼Ò
-                all_failed = False  # ÖÁÉÙÓĞÒ»¸öÈËÃ»Ê§°Ü
+            if not self.failed.get(user_id, False):  # æ’é™¤å¤±è´¥çš„ç©å®¶
+                all_failed = False  # è‡³å°‘æœ‰ä¸€ä¸ªäººæ²¡å¤±è´¥
                 diff = MAX_POT_LIMIT - pot
                 if diff < min_diff:
                     min_diff = diff
                     winner = user_id
 
-        # ÅĞ¶ÏÊ¤¸º
+        # åˆ¤æ–­èƒœè´Ÿ
         if all_failed:
-            message = 'ËùÓĞÍæ¼Ò¶¼Ê§°ÜÁË£¬ÓÎÏ·Á÷¾Ö£¡Ã¿ÈË¿Û³ı1000½ğ±Ò¡£\n'
+            message = 'æ‰€æœ‰ç©å®¶éƒ½å¤±è´¥äº†ï¼Œæ¸¸æˆæµå±€ï¼æ¯äººæ‰£é™¤1000é‡‘å¸ã€‚\n'
             for user_id in self.players:
                 money.reduce_user_money(user_id, 'gold', PENALTY)
-                message += f'{MessageSegment.at(user_id)} ¿Û³ı {PENALTY} ½ğ±Ò¡£\n'
+                message += f'{MessageSegment.at(user_id)} æ‰£é™¤ {PENALTY} é‡‘å¸ã€‚\n'
             await self.bot.send_group_msg(group_id=self.group_id, message=message)
 
         else:
-            message = f'¹§Ï² {MessageSegment.at(winner)} »ñÊ¤£¬»ñµÃ½±³ØÖĞµÄËùÓĞ½ğ±Ò£¡\n'
+            message = f'æ­å–œ {MessageSegment.at(winner)} è·èƒœï¼Œè·å¾—å¥–æ± ä¸­çš„æ‰€æœ‰é‡‘å¸ï¼\n'
             wining_money = self.players[winner]
             money.increase_user_money(winner, 'gold', wining_money)
-            message += f'»ñµÃ {wining_money} ½ğ±Ò¡£\n'
+            message += f'è·å¾— {wining_money} é‡‘å¸ã€‚\n'
             for user_id in self.players:
                 if user_id != winner:
                      money.reduce_user_money(user_id, 'gold', PENALTY)
-                     message += f'{MessageSegment.at(user_id)} ¿Û³ı {PENALTY} ½ğ±Ò¡£\n'
+                     message += f'{MessageSegment.at(user_id)} æ‰£é™¤ {PENALTY} é‡‘å¸ã€‚\n'
             await self.bot.send_group_msg(group_id=self.group_id, message=message)
 
-        # ÇåÀí»á»°
+        # æ¸…ç†ä¼šè¯
         self.cancel_timer()
         del game_sessions[self.group_id][self.session_id]
         if not game_sessions[self.group_id]:
@@ -168,27 +168,27 @@ class GoldBombSession:
             return
 
         self.is_running = False
-        await self.bot.send_group_msg(group_id=self.group_id, message='ÓÎÏ·ÒÑ¹Ø±Õ¡£')
+        await self.bot.send_group_msg(group_id=self.group_id, message='æ¸¸æˆå·²å…³é—­ã€‚')
 
-        self.cancel_timer() #È¡Ïû¶¨Ê±ÈÎÎñ
+        self.cancel_timer() #å–æ¶ˆå®šæ—¶ä»»åŠ¡
         del game_sessions[self.group_id][self.session_id]
         if not game_sessions[self.group_id]:
             del game_sessions[self.group_id]
 
-    # ¶¨Ê±ÈÎÎñ
+    # å®šæ—¶ä»»åŠ¡
     async def auto_close(self):
-        if self.is_running:  # Ö»ÓĞµ±ÓÎÏ·ÕıÔÚÔËĞĞÊ±²ÅÖ´ĞĞ
-            if time.time() - self.start_time >= TIMEOUT: # ¼ì²éÊÇ·ñ³¬Ê±
-                await self.bot.send_group_msg(group_id=self.group_id, message='ÓÎÏ·»á»°³¬Ê±£¬×Ô¶¯¹Ø±Õ¡£')
+        if self.is_running:  # åªæœ‰å½“æ¸¸æˆæ­£åœ¨è¿è¡Œæ—¶æ‰æ‰§è¡Œ
+            if time.time() - self.start_time >= TIMEOUT: # æ£€æŸ¥æ˜¯å¦è¶…æ—¶
+                await self.bot.send_group_msg(group_id=self.group_id, message='æ¸¸æˆä¼šè¯è¶…æ—¶ï¼Œè‡ªåŠ¨å…³é—­ã€‚')
                 await self.close()
 
     def set_timer(self):
         self.task = asyncio.ensure_future(self.auto_close_loop())
-        self.task.set_name(f"½ğ±ÒÕ¨µ¯-{self.group_id}-{self.session_id}") #ÉèÖÃÈÎÎñÃû³Æ
+        self.task.set_name(f"é‡‘å¸ç‚¸å¼¹-{self.group_id}-{self.session_id}") #è®¾ç½®ä»»åŠ¡åç§°
 
     async def auto_close_loop(self):
         while self.is_running:
-            await asyncio.sleep(60)  # Ã¿¸ô60Ãë¼ì²éÒ»´ÎÊÇ·ñ³¬Ê±
+            await asyncio.sleep(60)  # æ¯éš”60ç§’æ£€æŸ¥ä¸€æ¬¡æ˜¯å¦è¶…æ—¶
             await self.auto_close()
 
     def cancel_timer(self):
@@ -197,203 +197,203 @@ class GoldBombSession:
 
     async def player_ready(self, user_id):
         if user_id not in self.players:
-            await self.bot.send_group_msg(group_id=self.group_id, message='Äã»¹Ã»ÓĞ¼ÓÈëÓÎÏ·¡£')
+            await self.bot.send_group_msg(group_id=self.group_id, message='ä½ è¿˜æ²¡æœ‰åŠ å…¥æ¸¸æˆã€‚')
             return
 
-        self.prepared[user_id] = True # ±ê¼ÇÍæ¼ÒÒÑ×¼±¸
-        await self.bot.send_group_msg(group_id=self.group_id, message=f'{MessageSegment.at(user_id)} ÒÑ×¼±¸¡£')
+        self.prepared[user_id] = True # æ ‡è®°ç©å®¶å·²å‡†å¤‡
+        await self.bot.send_group_msg(group_id=self.group_id, message=f'{MessageSegment.at(user_id)} å·²å‡†å¤‡ã€‚')
 
-        if len(self.players) >= 2 and all(self.prepared.values()): # ¼ì²éÊÇ·ñËùÓĞÍæ¼Ò¶¼ÒÑ×¼±¸
-            await self.bot.send_group_msg(group_id=self.group_id, message='ËùÓĞÍæ¼ÒÒÑ×¼±¸£¬ÓÎÏ·¼´½«¿ªÊ¼...')
+        if len(self.players) >= 2 and all(self.prepared.values()): # æ£€æŸ¥æ˜¯å¦æ‰€æœ‰ç©å®¶éƒ½å·²å‡†å¤‡
+            await self.bot.send_group_msg(group_id=self.group_id, message='æ‰€æœ‰ç©å®¶å·²å‡†å¤‡ï¼Œæ¸¸æˆå³å°†å¼€å§‹...')
             await self.start()
 
     async def player_quit(self, user_id):
         if user_id not in self.players:
-            await self.bot.send_group_msg(group_id=self.group_id, message='Äã»¹Ã»ÓĞ¼ÓÈëÓÎÏ·¡£')
+            await self.bot.send_group_msg(group_id=self.group_id, message='ä½ è¿˜æ²¡æœ‰åŠ å…¥æ¸¸æˆã€‚')
             return
 
-        if self.is_running: # ÓÎÏ·ÒÑ¾­¿ªÊ¼
-            await self.bot.send_group_msg(group_id=self.group_id, message='ÓÎÏ·ÒÑ¾­¿ªÊ¼£¬ÎŞ·¨ÍË³ö¡£')
+        if self.is_running: # æ¸¸æˆå·²ç»å¼€å§‹
+            await self.bot.send_group_msg(group_id=self.group_id, message='æ¸¸æˆå·²ç»å¼€å§‹ï¼Œæ— æ³•é€€å‡ºã€‚')
             return
 
-        del self.players[user_id] # ÒÆ³ıÍæ¼Ò
+        del self.players[user_id] # ç§»é™¤ç©å®¶
         if user_id in self.prepared:
             del self.prepared[user_id]
 
-        await self.bot.send_group_msg(group_id=self.group_id, message=f'{MessageSegment.at(user_id)} ÍË³öÁËÓÎÏ·¡£')
+        await self.bot.send_group_msg(group_id=self.group_id, message=f'{MessageSegment.at(user_id)} é€€å‡ºäº†æ¸¸æˆã€‚')
 
-        if not self.players: # Ã»ÓĞÍæ¼ÒÁË
+        if not self.players: # æ²¡æœ‰ç©å®¶äº†
             await self.close()
 
-# Ö¸Áî´¦Àí
-@sv.on_fullmatch('½ğ±ÒÕ¨µ¯')
+# æŒ‡ä»¤å¤„ç†
+@sv.on_fullmatch('é‡‘å¸ç‚¸å¼¹')
 async def start_game(bot: HoshinoBot, ev: Event):
     group_id = ev.group_id
     user_id = ev.user_id
 
     if group_id in game_sessions and game_sessions[group_id]:
-        await bot.send(ev, 'µ±Ç°ÈºÒÑÓĞ½øĞĞÖĞµÄ½ğ±ÒÕ¨µ¯ÓÎÏ·¡£')
+        await bot.send(ev, 'å½“å‰ç¾¤å·²æœ‰è¿›è¡Œä¸­çš„é‡‘å¸ç‚¸å¼¹æ¸¸æˆã€‚')
         return
 
-    # ´´½¨ĞÂµÄÓÎÏ·»á»°
+    # åˆ›å»ºæ–°çš„æ¸¸æˆä¼šè¯
     session = GoldBombSession(group_id, user_id, bot)
 
-    # ³õÊ¼»¯»á»°
+    # åˆå§‹åŒ–ä¼šè¯
     if group_id not in game_sessions:
         game_sessions[group_id] = {}
     game_sessions[group_id][session.session_id] = session
 
-    await bot.send(ev, f'½ğ±ÒÕ¨µ¯ÓÎÏ·ÒÑ·¢Æğ£¬µÈ´ıÍæ¼Ò¼ÓÈë£¬·¢ËÍ¡°¼ÓÈëÓÎÏ·¡±¼ÓÈëÓÎÏ·¡£')
+    await bot.send(ev, f'é‡‘å¸ç‚¸å¼¹æ¸¸æˆå·²å‘èµ·ï¼Œç­‰å¾…ç©å®¶åŠ å…¥ï¼Œå‘é€â€œåŠ å…¥æ¸¸æˆâ€åŠ å…¥æ¸¸æˆï¼ˆæˆ¿ä¸»ä¹Ÿéœ€è¦åŠ å…¥æ¸¸æˆå“¦~ï¼‰ã€‚')
 
-@sv.on_fullmatch('¼ÓÈëÓÎÏ·')
+@sv.on_fullmatch('åŠ å…¥æ¸¸æˆ')
 async def join_game(bot: HoshinoBot, ev: Event):
     group_id = ev.group_id
     user_id = ev.user_id
     user_gold = money.get_user_money(user_id, 'gold')
     if user_gold<1000:
-        await bot.send(ev, 'ÄãÃ»ÓĞ×ã¹»µÄ¶Ä×Êà¸...' + no)
+        await bot.send(ev, 'ä½ æ²¡æœ‰è¶³å¤Ÿçš„èµŒèµ„å–”...' + no)
         return
     if group_id not in game_sessions or not game_sessions[group_id]:
-        await bot.send(ev, 'µ±Ç°ÈºÃ»ÓĞ½øĞĞÖĞµÄ½ğ±ÒÕ¨µ¯ÓÎÏ·£¬·¢ËÍ¡°½ğ±ÒÕ¨µ¯¡±·¢ÆğÓÎÏ·¡£')
+        await bot.send(ev, 'å½“å‰ç¾¤æ²¡æœ‰è¿›è¡Œä¸­çš„é‡‘å¸ç‚¸å¼¹æ¸¸æˆï¼Œå‘é€â€œé‡‘å¸ç‚¸å¼¹â€å‘èµ·æ¸¸æˆã€‚')
         return
 
-    # »ñÈ¡µ±Ç°»á»°
-    session = list(game_sessions[group_id].values())[0] #Ö»È¡µÚÒ»¸ö
+    # è·å–å½“å‰ä¼šè¯
+    session = list(game_sessions[group_id].values())[0] #åªå–ç¬¬ä¸€ä¸ª
 
     if user_id in session.players:
-        await bot.send(ev, 'ÄãÒÑ¾­¼ÓÈëÁËÓÎÏ·¡£')
+        await bot.send(ev, 'ä½ å·²ç»åŠ å…¥äº†æ¸¸æˆã€‚')
         return
 
     if len(session.players) >= 3:
-        await bot.send(ev, 'ÓÎÏ·ÈËÊıÒÑÂú¡£')
+        await bot.send(ev, 'æ¸¸æˆäººæ•°å·²æ»¡ã€‚')
         return
 
-    # ¼ÓÈëÍæ¼Ò
-    session.players[user_id] = 0  # ³õÊ¼½ğ±Ò½±³ØÎª0
-    session.prepared[user_id] = False  # ³õÊ¼ÎªÎ´×¼±¸
-    session.failed[user_id] = False # ³õÊ¼ÎªÎ´Ê§°Ü
+    # åŠ å…¥ç©å®¶
+    session.players[user_id] = 0  # åˆå§‹é‡‘å¸å¥–æ± ä¸º0
+    session.prepared[user_id] = False  # åˆå§‹ä¸ºæœªå‡†å¤‡
+    session.failed[user_id] = False # åˆå§‹ä¸ºæœªå¤±è´¥
 
-    await bot.send(ev, f'{MessageSegment.at(user_id)} ¼ÓÈëÓÎÏ·¡£µ±Ç°ÈËÊı {len(session.players)}/3¡£Çë·¢ËÍ"×¼±¸"¿ªÊ¼ÓÎÏ·')
+    await bot.send(ev, f'{MessageSegment.at(user_id)} åŠ å…¥æ¸¸æˆã€‚å½“å‰äººæ•° {len(session.players)}/3ã€‚è¯·å‘é€"å‡†å¤‡"å¼€å§‹æ¸¸æˆ')
 
-@sv.on_fullmatch('×¼±¸')
+@sv.on_fullmatch('å‡†å¤‡')
 async def player_ready(bot: HoshinoBot, ev: Event):
     group_id = ev.group_id
     user_id = ev.user_id
 
     if group_id not in game_sessions or not game_sessions[group_id]:
-        await bot.send(ev, 'µ±Ç°ÈºÃ»ÓĞ½øĞĞÖĞµÄ½ğ±ÒÕ¨µ¯ÓÎÏ·¡£')
+        await bot.send(ev, 'å½“å‰ç¾¤æ²¡æœ‰è¿›è¡Œä¸­çš„é‡‘å¸ç‚¸å¼¹æ¸¸æˆã€‚')
         return
 
     session = list(game_sessions[group_id].values())[0]
     if session.is_running:
-        await bot.send(ev, 'ÓÎÏ·ÒÑ¾­¿ªÊ¼ÁË¡£')
+        await bot.send(ev, 'æ¸¸æˆå·²ç»å¼€å§‹äº†ã€‚')
         return
 
     await session.player_ready(user_id)
 
-@sv.on_fullmatch('ÍË³öÓÎÏ·')
+@sv.on_fullmatch('é€€å‡ºæ¸¸æˆ')
 async def player_quit(bot: HoshinoBot, ev: Event):
     group_id = ev.group_id
     user_id = ev.user_id
 
     if group_id not in game_sessions or not game_sessions[group_id]:
-        await bot.send(ev, 'µ±Ç°ÈºÃ»ÓĞ½øĞĞÖĞµÄ½ğ±ÒÕ¨µ¯ÓÎÏ·¡£')
+        await bot.send(ev, 'å½“å‰ç¾¤æ²¡æœ‰è¿›è¡Œä¸­çš„é‡‘å¸ç‚¸å¼¹æ¸¸æˆã€‚')
         return
 
     session = list(game_sessions[group_id].values())[0]
     await session.player_quit(user_id)
 
-@sv.on_fullmatch('ÏÂ×¢')
+@sv.on_fullmatch('ä¸‹æ³¨')
 async def bet(bot: HoshinoBot, ev: Event):
     group_id = ev.group_id
     user_id = ev.user_id
 
     if group_id not in game_sessions or not game_sessions[group_id]:
-        await bot.send(ev, 'µ±Ç°ÈºÃ»ÓĞ½øĞĞÖĞµÄ½ğ±ÒÕ¨µ¯ÓÎÏ·¡£')
+        await bot.send(ev, 'å½“å‰ç¾¤æ²¡æœ‰è¿›è¡Œä¸­çš„é‡‘å¸ç‚¸å¼¹æ¸¸æˆã€‚')
         return
 
     session = list(game_sessions[group_id].values())[0]
     if not session.is_running:
-        await bot.send(ev, 'ÓÎÏ·ÉĞÎ´¿ªÊ¼£¬ÇëµÈ´ıËùÓĞÍæ¼Ò×¼±¸¡£')
+        await bot.send(ev, 'æ¸¸æˆå°šæœªå¼€å§‹ï¼Œè¯·ç­‰å¾…æ‰€æœ‰ç©å®¶å‡†å¤‡ã€‚')
         return
 
     await session.bet(user_id)
 
-@sv.on_fullmatch('Í£Ö¹ÏÂ×¢')
+@sv.on_fullmatch('åœæ­¢ä¸‹æ³¨')
 async def stop_bet(bot: HoshinoBot, ev: Event):
     group_id = ev.group_id
     user_id = ev.user_id
 
     if group_id not in game_sessions or not game_sessions[group_id]:
-        await bot.send(ev, 'µ±Ç°ÈºÃ»ÓĞ½øĞĞÖĞµÄ½ğ±ÒÕ¨µ¯ÓÎÏ·¡£')
+        await bot.send(ev, 'å½“å‰ç¾¤æ²¡æœ‰è¿›è¡Œä¸­çš„é‡‘å¸ç‚¸å¼¹æ¸¸æˆã€‚')
         return
 
     session = list(game_sessions[group_id].values())[0]
     if not session.is_running:
-         await bot.send(ev, 'ÓÎÏ·ÉĞÎ´¿ªÊ¼£¬ÇëµÈ´ıËùÓĞÍæ¼Ò×¼±¸¡£')
+         await bot.send(ev, 'æ¸¸æˆå°šæœªå¼€å§‹ï¼Œè¯·ç­‰å¾…æ‰€æœ‰ç©å®¶å‡†å¤‡ã€‚')
          return
-    await bot.send(ev, f'{MessageSegment.at(user_id)} Í£Ö¹ÏÂ×¢¡£')
+    await bot.send(ev, f'{MessageSegment.at(user_id)} åœæ­¢ä¸‹æ³¨ã€‚')
     await session.stop_bet(user_id)
     
     
-@sv.on_prefix('¹Ø±ÕÓÎÏ·')
+@sv.on_prefix('å…³é—­æ¸¸æˆ')
 async def close_game_by_admin(bot: HoshinoBot, ev: Event):
     """
-    ¹ÜÀíÔ±Ö±½Ó¹Ø±Õµ±Ç°ÈºÁÄÖĞµÄ½ğ±ÒÕ¨µ¯»á»°¡£
+    ç®¡ç†å‘˜ç›´æ¥å…³é—­å½“å‰ç¾¤èŠä¸­çš„é‡‘å¸ç‚¸å¼¹ä¼šè¯ã€‚
     """
     group_id = ev.group_id
     user_id = ev.user_id
 
     if user_id not in SUPERUSERS:
-        await bot.send(ev, "Ö»ÓĞ¹ÜÀíÔ±²ÅÄÜÊ¹ÓÃ´ËÖ¸Áî¡£", at_sender=True)
+        await bot.send(ev, "åªæœ‰ç®¡ç†å‘˜æ‰èƒ½ä½¿ç”¨æ­¤æŒ‡ä»¤ã€‚", at_sender=True)
         return
 
     if group_id not in game_sessions or not game_sessions[group_id]:
-        await bot.send(ev, 'µ±Ç°ÈºÃ»ÓĞ½øĞĞÖĞµÄ½ğ±ÒÕ¨µ¯ÓÎÏ·¡£')
+        await bot.send(ev, 'å½“å‰ç¾¤æ²¡æœ‰è¿›è¡Œä¸­çš„é‡‘å¸ç‚¸å¼¹æ¸¸æˆã€‚')
         return
 
-    # ¹Ø±Õµ±Ç°Èº×éµÄËùÓĞ½ğ±ÒÕ¨µ¯»á»°
-    sessions_to_close = list(game_sessions[group_id].items())  # ¸´ÖÆÒ»·İ»á»°ÁĞ±í£¬±ÜÃâµü´úÖĞĞŞ¸Ä×Öµä
+    # å…³é—­å½“å‰ç¾¤ç»„çš„æ‰€æœ‰é‡‘å¸ç‚¸å¼¹ä¼šè¯
+    sessions_to_close = list(game_sessions[group_id].items())  # å¤åˆ¶ä¸€ä»½ä¼šè¯åˆ—è¡¨ï¼Œé¿å…è¿­ä»£ä¸­ä¿®æ”¹å­—å…¸
     for session_id, session in sessions_to_close:
-        await session.close() #ÏÈÕıÈ·¹Ø±Õsession
-        del game_sessions[group_id][session_id]  # ´Ó×ÖµäÖĞÉ¾³ı»á»°
+        await session.close() #å…ˆæ­£ç¡®å…³é—­session
+        del game_sessions[group_id][session_id]  # ä»å­—å…¸ä¸­åˆ é™¤ä¼šè¯
 
-    # ¼ì²éÊÇ·ñĞèÒªÉ¾³ı group_id ¶ÔÓ¦µÄ¼ü
+    # æ£€æŸ¥æ˜¯å¦éœ€è¦åˆ é™¤ group_id å¯¹åº”çš„é”®
     if not game_sessions[group_id]:
         del game_sessions[group_id]
 
-    await bot.send(ev, '¹ÜÀíÔ±ÒÑ¹Ø±Õµ±Ç°ÈºµÄ½ğ±ÒÕ¨µ¯ÓÎÏ·¡£')
+    await bot.send(ev, 'ç®¡ç†å‘˜å·²å…³é—­å½“å‰ç¾¤çš„é‡‘å¸ç‚¸å¼¹æ¸¸æˆã€‚')
     
 help_goldboom = '''
-½ğ±ÒÕ¨µ¯ÓÎÏ·°ïÖú£º
+é‡‘å¸ç‚¸å¼¹æ¸¸æˆå¸®åŠ©ï¼š
 
-ÕâÊÇÒ»¸ö×î¶àÈıÈË²ÎÓëµÄ½ğ±Ò½±³ØÓÎÏ·¡£
+è¿™æ˜¯ä¸€ä¸ªæœ€å¤šä¸‰äººå‚ä¸çš„é‡‘å¸å¥–æ± æ¸¸æˆã€‚
 
-**ÓÎÏ·Á÷³Ì£º**
-1.  ·¢ËÍ¡°½ğ±ÒÕ¨µ¯¡±·¢ÆğÓÎÏ·¡£
-2.  Íæ¼Ò·¢ËÍ¡°¼ÓÈëÓÎÏ·¡±¼ÓÈëÓÎÏ·¡£
-3.  ¼ÓÈëÓÎÏ·µÄÍæ¼Ò·¢ËÍ¡°×¼±¸¡±Ö¸Áî£¬µ±ËùÓĞÍæ¼Ò¶¼×¼±¸ºó£¬ÓÎÏ·¿ªÊ¼¡£
-4.  Íæ¼ÒÂÖÁ÷·¢ËÍ¡°ÏÂ×¢¡±Ö¸Áî£¬Ëæ»úÔö¼Ó×Ô¼º½±³ØµÄ½ğ±Ò¡£
-5.  Ã¿¸öÍæ¼ÒµÄ½±³ØÉÏÏŞÎª1000½ğ±Ò£¬³¬¹ıÉÏÏŞÔòÁ¢¼´ÅĞ¶¨Ê§°Ü¡£
-6.  Íæ¼Ò¿ÉÒÔ·¢ËÍ¡°Í£Ö¹ÏÂ×¢¡±Ö¸ÁîÌáÇ°½áÊø×Ô¼ºµÄÏÂ×¢¡£
-7.  µ±ËùÓĞÍæ¼Ò¶¼Í£Ö¹ÏÂ×¢»òÊ§°Üºó£¬ÓÎÏ·½áÊø£¬Î´Ê§°ÜµÄÍæ¼ÒÖĞ£¬½±³Ø½ğ¶î×î½Ó½üÉÏÏŞµÄÍæ¼Ò»ñÊ¤£¬»ñµÃ×Ô¼º½±³ØÖĞµÄËùÓĞ½ğ±Ò¡£
-8.  Ê§°ÜµÄÍæ¼Ò¿Û³ı1000½ğ±Ò¡£
-9.  ÓÎÏ·¿ªÊ¼Ç°£¬Íæ¼Ò¿ÉÒÔ·¢ËÍ¡°ÍË³öÓÎÏ·¡±Ö¸ÁîÍË³öÓÎÏ·
-10. Èç¹ûÓÎÏ·³¬¹ı3·ÖÖÓÎŞÈË²Ù×÷£¬Ôò×Ô¶¯¹Ø±Õ»á»°¡£
+**æ¸¸æˆæµç¨‹ï¼š**
+1.  å‘é€â€œé‡‘å¸ç‚¸å¼¹â€å‘èµ·æ¸¸æˆã€‚
+2.  ç©å®¶å‘é€â€œåŠ å…¥æ¸¸æˆâ€åŠ å…¥æ¸¸æˆã€‚
+3.  åŠ å…¥æ¸¸æˆçš„ç©å®¶å‘é€â€œå‡†å¤‡â€æŒ‡ä»¤ï¼Œå½“æ‰€æœ‰ç©å®¶éƒ½å‡†å¤‡åï¼Œæ¸¸æˆå¼€å§‹ã€‚
+4.  ç©å®¶è½®æµå‘é€â€œä¸‹æ³¨â€æŒ‡ä»¤ï¼Œéšæœºå¢åŠ è‡ªå·±å¥–æ± çš„é‡‘å¸ã€‚
+5.  æ¯ä¸ªç©å®¶çš„å¥–æ± ä¸Šé™ä¸º1000é‡‘å¸ï¼Œè¶…è¿‡ä¸Šé™åˆ™ç«‹å³åˆ¤å®šå¤±è´¥ã€‚
+6.  ç©å®¶å¯ä»¥å‘é€â€œåœæ­¢ä¸‹æ³¨â€æŒ‡ä»¤æå‰ç»“æŸè‡ªå·±çš„ä¸‹æ³¨ã€‚
+7.  å½“æ‰€æœ‰ç©å®¶éƒ½åœæ­¢ä¸‹æ³¨æˆ–å¤±è´¥åï¼Œæ¸¸æˆç»“æŸï¼Œæœªå¤±è´¥çš„ç©å®¶ä¸­ï¼Œå¥–æ± é‡‘é¢æœ€æ¥è¿‘ä¸Šé™çš„ç©å®¶è·èƒœï¼Œè·å¾—è‡ªå·±å¥–æ± ä¸­çš„æ‰€æœ‰é‡‘å¸ã€‚
+8.  å¤±è´¥çš„ç©å®¶æ‰£é™¤1000é‡‘å¸ã€‚
+9.  æ¸¸æˆå¼€å§‹å‰ï¼Œç©å®¶å¯ä»¥å‘é€â€œé€€å‡ºæ¸¸æˆâ€æŒ‡ä»¤é€€å‡ºæ¸¸æˆ
+10. å¦‚æœæ¸¸æˆè¶…è¿‡3åˆ†é’Ÿæ— äººæ“ä½œï¼Œåˆ™è‡ªåŠ¨å…³é—­ä¼šè¯ã€‚
 
-**Ö¸ÁîÁĞ±í£º**
-*   ½ğ±ÒÕ¨µ¯£º·¢ÆğÓÎÏ·
-*   ¼ÓÈëÓÎÏ·£º¼ÓÈëÓÎÏ·
-*   ×¼±¸£º×¼±¸ÓÎÏ·
-*   ÍË³öÓÎÏ·£ºÍË³öÓÎÏ·
-*   ÏÂ×¢£ºÔö¼Ó½±³Ø½ğ¶î
-*   Í£Ö¹ÏÂ×¢£ºÍ£Ö¹ÏÂ×¢
-*   ½ğ±ÒÕ¨µ¯°ïÖú£º²é¿´ÓÎÏ·°ïÖú
+**æŒ‡ä»¤åˆ—è¡¨ï¼š**
+*   é‡‘å¸ç‚¸å¼¹ï¼šå‘èµ·æ¸¸æˆ
+*   åŠ å…¥æ¸¸æˆï¼šåŠ å…¥æ¸¸æˆ
+*   å‡†å¤‡ï¼šå‡†å¤‡æ¸¸æˆ
+*   é€€å‡ºæ¸¸æˆï¼šé€€å‡ºæ¸¸æˆ
+*   ä¸‹æ³¨ï¼šå¢åŠ å¥–æ± é‡‘é¢
+*   åœæ­¢ä¸‹æ³¨ï¼šåœæ­¢ä¸‹æ³¨
+*   é‡‘å¸ç‚¸å¼¹å¸®åŠ©ï¼šæŸ¥çœ‹æ¸¸æˆå¸®åŠ©
 '''
-@sv.on_fullmatch('½ğ±ÒÕ¨µ¯°ïÖú')
+@sv.on_fullmatch('é‡‘å¸ç‚¸å¼¹å¸®åŠ©')
 async def goldboom_help(bot, ev):
     """
-        À­È¡ÓÎÏ·°ïÖú
+        æ‹‰å–æ¸¸æˆå¸®åŠ©
     """
     chain = []
     await chain_reply(bot, ev, chain, help_goldboom)
