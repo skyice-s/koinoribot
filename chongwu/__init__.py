@@ -211,13 +211,14 @@ async def buy_pet_item(bot, ev: CQEvent):
     if not args:
         # 显示商店列表
         item_list = []
-        for name, info in PET_SHOP_ITEMS.items():
+        for name, info in PET_SHOP_ITEMS.items() :
             price = info["price"]
             effect = info.get("effect", "")
             item_list.append(f"{name} - {price}宝石 ({effect})")
-        
-        await bot.send(ev, "可购买的宠物用品:\n" + "\n".join(item_list) +
-                      "\n使用'购买 [名称] [数量]'来购买", at_sender=True)
+            
+        chain_shop = []
+        await chain_reply(bot, ev, chain_shop, "可购买的宠物用品:\n" + "\n".join(item_list) +"\n使用'购买 名称 数量'来购买")
+        await bot.send_group_forward_msg(group_id=ev.group_id, messages=chain_shop)
         return
     
     item_name = args[0]
@@ -231,7 +232,6 @@ async def buy_pet_item(bot, ev: CQEvent):
         return
     
     if item_name not in PET_SHOP_ITEMS:
-        await bot.send(ev, f"没有名为'{item_name}'的宠物用品！", at_sender=True)
         return
     
     price = PET_SHOP_ITEMS[item_name]["price"] * quantity
@@ -259,6 +259,9 @@ async def show_pet_items(bot, ev: CQEvent):
     item_list = [f"{name} ×{count}" for name, count in user_items.items()]
     await bot.send(ev, "你拥有的宠物用品:\n" + "\n".join(item_list) +
                   "\n请发送‘宠物帮助’来查看具体的使用方法", at_sender=True)
+
+
+
 
 # 投喂宠物指令
 @sv.on_prefix(('投喂', '喂食宠物', '投喂宠物'))
@@ -610,7 +613,7 @@ async def trigger_pet_skills(bot, ev):
             last_event_date = None
 
     # 检查是否已经执行过今日事件
-    if last_event_date and last_event_date == now_date:
+    if last_event_date and last_event_date == now_date and user_id not in SUPERUSERS:
         await bot.send(ev, "今天已经触发过宠物事件了，请明天再来！", at_sender=True)
         return
 
@@ -669,7 +672,10 @@ async def trigger_pet_skills(bot, ev):
 
     # 发送事件结果
     msg_parts = [f"{pet['name']}今天发生了以下事件："] + results
-    await bot.send(ev, "\n".join(msg_parts), at_sender=True)
+    chain_event = []
+    await chain_reply(bot, ev, chain_event, "\n".join(msg_parts))
+    await bot.send_group_forward_msg(group_id=ev.group_id, messages=chain_event)
+
 
 @sv.on_prefix(('摸摸宠物', '陪伴宠物'))
 async def play_with_pet(bot, ev):
@@ -847,9 +853,9 @@ async def release_pet(bot, ev):
     pet = await get_user_pet(user_id)
     pet = await update_pet_status(pet)
     await update_user_pet(user_id, pet)
-    if pet["runaway"]:
-        await bot.send(ev, f"{pet['name']}已经离家出走了！使用'最初的契约'可以寻回它。", at_sender=True)
-        return
+    #if pet["runaway"]:
+        #await bot.send(ev, f"{pet['name']}已经离家出走了！使用'寻回宠物'可以寻回它。", at_sender=True)
+        #return
     if not pet:
         await bot.send(ev, "你还没有宠物！", at_sender=True)
         return
@@ -975,6 +981,7 @@ async def my_pet_ranking(bot, ev):
             f"\n成长值: {my_growth:.1f}",
             at_sender=True
         )
+
 
 
 

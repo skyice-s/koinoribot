@@ -472,7 +472,7 @@ def generate_stock_chart(stock_name, history, stock_data=None):
 
     # 更新图表布局
     fig.update_layout(
-        title=f'{stock_name} 过去{HISTORY_DURATION_HOURS}小时价格走势 (初始: {initial_price:.2f})',
+        title=f'{stock_name} 过去{HISTORY_DURATION_HOURS}小时价格走势 (初始价格: {initial_price:.2f}金币 最高上涨至初始价格的2倍)',
         xaxis_title='时间',
         yaxis_title='价格 (金币)',
         xaxis=dict(
@@ -782,9 +782,12 @@ async def handle_stock_list(bot, ev):
                 report_lines.append("\n(部分股票价格为初始价)")
         except (IndexError, KeyError):
              report_lines.append("\n(无法获取准确更新时间)")
-
+             
     # 发送整合后的列表
-    await bot.send(ev, "\n".join(report_lines))
+    chain = []
+    await chain_reply(bot, ev, chain, "\n".join(report_lines))
+    await bot.send_group_forward_msg(group_id=ev.group_id, messages=chain)
+    #await bot.send(ev, "\n".join(report_lines))
 
 @sv.on_prefix(('市场动态', '股市新闻', '市场事件'))
 async def handle_market_events(bot, ev):
@@ -830,7 +833,10 @@ async def handle_market_events(bot, ev):
                 f"({change_direction}{abs(change_percent):.1f}%)"
             )
     
-    await bot.send(ev, "\n\n".join(event_lines))
+    chain = []
+    await chain_reply(bot, ev, chain, "\n\n".join(event_lines))
+    await bot.send_group_forward_msg(group_id=ev.group_id, messages=chain)
+    #await bot.send(ev, "\n\n".join(event_lines))
     
 
     
@@ -980,8 +986,7 @@ async def fix_stock_data(bot, ev):
     except Exception as e:
         await bot.send(ev, f"❌ 修复失败: {str(e)}")
 
-help_chaogu = '''
-炒股游戏帮助：
+help_chaogu = '''炒股游戏帮助：
 
 温馨提醒：股市有风险，切莫上头。
 
@@ -1152,6 +1157,7 @@ async def handle_confirm_gamble(bot, ev: CQEvent):
     luckygold = money.get_user_money(user_id, 'luckygold')
     if luckygold < 1:
         await bot.send(ev, "\n你没有足够的幸运币参与豪赌。"+no, at_sender=True)
+        del gambling_sessions[user_id]
         return
     money.reduce_user_money(user_id, 'luckygold', 1)
     # 标记确认，激活会话，记录次数
@@ -1433,8 +1439,8 @@ async def diabo(bot, ev):
         return
 
     # 1. 检查每日低保数量限制
-    if daily_diabo_count.get(today, 0) >= 10:
-        await bot.send(ev, "\n今天10份低保已经发完了，明天再来吧。" + no, at_sender=True)
+    if daily_diabo_count.get(today, 0) >= 20:
+        await bot.send(ev, "\n今天20份低保已经发完了，明天再来吧。" + no, at_sender=True)
         return
     if uid in gambling_sessions and gambling_sessions[uid].get('active', False) is True:
         await bot.send(ev, "\n赌徒不能领取低保哦~。"+no, at_sender=True)
@@ -1482,10 +1488,10 @@ async def diabo(bot, ev):
     daily_diabo_count[today] = daily_diabo_count.get(today, 0) + 1  # 增加每日计数
 
     # 5. 发放低保
-    money.increase_user_money(uid, 'gold', 2500)
+    money.increase_user_money(uid, 'gold', 3000)
     
     # 6. 发送消息
-    await bot.send(ev, f"\n已领取今日份低保。\n你现在有{user_gold + 2500}金币" + ok, at_sender=True)
+    await bot.send(ev, f"\n已领取今日份低保。\n你现在有{user_gold + 3000}金币" + ok, at_sender=True)
 
 
 #增加一个清理过期缓存的函数，定期执行，避免缓存无限增长
