@@ -62,7 +62,7 @@ def with_lock(lock):
     #     saveData(total_info, user_info_path)
 
 async def load_user_data(user_path):
-    await load_json_data(user_path,{})
+    return await load_json_data(user_path,{})
 
 async def save_user_data(user_path,data):
     await save_json_data(user_path,data)
