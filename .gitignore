@@ -1,3 +1,4 @@
 /.vs/
 *.json
 **/__pycache__/
+/.idea/
