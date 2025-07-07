@@ -22,6 +22,7 @@ from .._interact import interact, ActSession
 from .evnet_functions import random_event
 from hoshino.typing import CQEvent as Event
 from ..utilize import get_double_mean_money
+from .async_util import user_info_path, USER_DATA_LOCK, load_to_save_data
 import os
 import asyncio
 
@@ -100,8 +101,6 @@ no = get('emotion/no.png').cqcode
 ok = get('emotion/ok.png').cqcode
 fish_list = FISH_LIST + ['✉', '🍙', '水之心']
 admin_path = os.path.join(userPath, 'fishing/db/admin.json')
-dbPath = os.path.join(userPath, 'fishing/db')
-user_info_path = os.path.join(dbPath, 'user_info.json')
 freq = FreqLimiter(config.COOL_TIME)
 throw_freq = FreqLimiter(config.THROW_COOL_TIME)
 get_freq = FreqLimiter(config.SALVAGE_COOL_TIME)
@@ -121,29 +120,29 @@ async def fishing_help(bot, ev):
         return
     set_reload_group(ev.group_id, _time=120)
     await bot.send_group_forward_msg(group_id=ev.group_id, messages=chain)
-    
+
 
 def generate_probability_message():
     """生成概率公示消息"""
     msg = "【钓鱼概率公示】\n"
-    
+
     # 处理空军概率
     air_force_prob = PROBABILITY[0][0]  # 第一个元组的第一个数字
     total_prob = sum(PROBABILITY[0])
     air_force_percentage = (air_force_prob / total_prob) * 100
     msg += f"\n空军概率：{air_force_percentage:.2f}% \n"
-    
-    
+
+
     msg += "\n钓到鱼后，各鱼种的出现概率：\n"
-    
+
     # 处理鱼的种类概率（使用PROBABILITY_2的第一个元组）
     fish_probabilities = PROBABILITY_2[0]
     fish_total = sum(fish_probabilities)
-    
+
     for fish, prob in zip(FISH_LIST, fish_probabilities):
         percentage = (prob / fish_total) * 100
         msg += f"{fish}: {percentage:.2f}% \n"
-    
+
     msg += "\n当前活动持续中："
     if config.star_price == 0:
         msg += "\n十连、百连钓鱼不消耗星星"
@@ -219,11 +218,7 @@ async def go_fishing(bot, ev):
         await bot.send(ev, msg, at_sender=True)
 
     # 加锁保存用户数据
-    lock = asyncio.Lock()
-    async with lock:
-        total_info = loadData(user_info_path)
-        total_info[uid] = user_info
-        saveData(total_info, user_info_path)
+    await load_to_save_data(user_info_path,user_info,uid)
 
 ##############################
 def cal_all_fish_value(result):
@@ -402,11 +397,7 @@ async def catch_Loli(bot, ev):
     # 消耗饭团
     decrease_value(uid, 'fish', '🍙', config.loliprice, user_info)
 
-    lock = asyncio.Lock()
-    async with lock:
-        total_info = loadData(user_info_path)
-        total_info[uid] = user_info  # 更新完整的 `user_info`
-        saveData(total_info, user_info_path)
+    await load_to_save_data(user_info_path, user_info, uid)
     
     # 几率造成miss
     if random.random() < config.miss:  # 生成介于0和1之间的随机数
@@ -591,11 +582,7 @@ async def multi_fishing(bot, ev, times, cost, star_cost, command_name):
         summary_message += judge["zero_value"]
 
     # 保存用户信息
-    lock = asyncio.Lock()
-    async with lock:
-        total_info = loadData(user_info_path)
-        total_info[uid] = user_info
-        saveData(total_info, user_info_path)
+    await load_to_save_data(user_info_path,user_info,uid)
 
     # 发送最终结果
     await bot.send(ev, summary_message, at_sender=True)
@@ -761,11 +748,7 @@ async def sell_small_fish(bot, ev):
         result.append(q_sell_fish(uid, fish, 9999, user_info))
 
     money.increase_user_money(uid, 'gold', get_gold)
-    lock = asyncio.Lock()
-    async with lock:
-        total_info = loadData(user_info_path)
-        total_info[uid] = user_info
-        saveData(total_info, user_info_path)
+    await load_to_save_data(user_info_path,user_info,uid)
 
 
     await bot.send(ev, '\n'.join(result), at_sender=True)
@@ -795,11 +778,7 @@ async def sell_all_fish(bot, ev):
         result.append(all_sell_fish(uid, fish, 99999, user_info))
 
     money.increase_user_money(uid, 'gold', get_gold)
-    lock = asyncio.Lock()
-    async with lock:
-        total_info = loadData(user_info_path)
-        total_info[uid] = user_info
-        saveData(total_info, user_info_path)
+    await load_to_save_data(user_info_path,user_info,uid)
 
 
     await bot.send(ev, '\n'.join(result), at_sender=True)
